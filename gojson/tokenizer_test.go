@@ -122,12 +122,6 @@ func TestTokenizer_Tokenize(t *testing.T) {
 					EndPos:   7,
 				},
 				{
-					Type:     WhiteSpace,
-					Data:     []rune(" "),
-					StartPos: 7,
-					EndPos:   8,
-				},
-				{
 					Type:     String,
 					Data:     []rune("hello"),
 					StartPos: 8,

@@ -7,14 +7,14 @@ import (
 
 func NewTokenizer(text string) *Tokenizer {
 	return &Tokenizer{
-		Raw:     text,
+		Raw:     &text,
 		Letters: []rune(text),
 		Pos:     0,
 	}
 }
 
 type Tokenizer struct {
-	Raw     string
+	Raw     *string
 	Letters []rune
 	Pos     int
 }
@@ -97,8 +97,8 @@ func (t *Tokenizer) ConsumeKeyword() (Token, error) {
 		err = nil
 	default:
 		tokenType = Unknown
-		err = &TKError{
-			ErrorType:    UndefinedError,
+		err = &TokenizerError{
+			ErrorType:    UndefinedKeywordError,
 			ErrorMessage: "undefined keyword",
 			Letters:      data,
 			StartPos:     startPos,
@@ -130,7 +130,7 @@ func (t *Tokenizer) ConsumeNumber() (Token, error) {
 
 	var err error
 	if data[0] == '.' {
-		err = &TKError{
+		err = &TokenizerError{
 			ErrorType:    InvalidDataError,
 			ErrorMessage: "Dot must not be at the beginning.",
 			Letters:      data,
@@ -138,7 +138,7 @@ func (t *Tokenizer) ConsumeNumber() (Token, error) {
 			EndPos:       endPos,
 		}
 	} else if len(string(data))-len(strings.ReplaceAll(string(data), ".", "")) > 1 {
-		err = &TKError{
+		err = &TokenizerError{
 			ErrorType:    InvalidDataError,
 			ErrorMessage: "There must not be more than one dot.",
 			Letters:      data,
@@ -146,7 +146,7 @@ func (t *Tokenizer) ConsumeNumber() (Token, error) {
 			EndPos:       endPos,
 		}
 	} else if strings.Contains(string(data), "-") && data[0] != '-' {
-		err = &TKError{
+		err = &TokenizerError{
 			ErrorType:    InvalidDataError,
 			ErrorMessage: "Minus must be at the beginning.",
 			Letters:      data,
@@ -154,7 +154,7 @@ func (t *Tokenizer) ConsumeNumber() (Token, error) {
 			EndPos:       endPos,
 		}
 	} else if len(string(data))-len(strings.ReplaceAll(string(data), "-", "")) > 1 {
-		err = &TKError{
+		err = &TokenizerError{
 			ErrorType:    InvalidDataError,
 			ErrorMessage: "There must not be more than one minus.",
 			Letters:      data,
@@ -242,7 +242,9 @@ func (t *Tokenizer) Tokenize() *[]Token {
 		}
 
 		if unicode.IsSpace(t.Letter()) {
-			tokens = append(tokens, t.ConsumeWhiteSpace())
+			// ignore whitespace
+			// tokens = append(tokens, t.ConsumeWhiteSpace())
+			t.ConsumeWhiteSpace()
 			continue
 		}
 
