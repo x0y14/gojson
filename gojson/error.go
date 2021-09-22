@@ -6,11 +6,27 @@ type ErrorType int
 
 const (
 	UnknownError ErrorType = iota
+
 	InvalidDataError
-	UndefinedError
+	UndefinedKeywordError
+
+	SyntaxError
 )
 
-type TKError struct {
+func (et ErrorType) String() string {
+	switch et {
+	case InvalidDataError:
+		return "InvalidDataError"
+	case UndefinedKeywordError:
+		return "UndefinedKeywordError"
+	case SyntaxError:
+		return "SyntaxError"
+	default:
+		return "UnknownError"
+	}
+}
+
+type TokenizerError struct {
 	ErrorType    ErrorType
 	ErrorMessage string
 	Letters      []rune
@@ -18,6 +34,18 @@ type TKError struct {
 	EndPos       int
 }
 
-func (e *TKError) Error() string {
-	return fmt.Sprintf("[e-%v @ %03d-%03d] %v: `%v`", e.ErrorType, e.StartPos, e.EndPos, e.ErrorMessage, string(e.Letters))
+func (e *TokenizerError) Error() string {
+	return fmt.Sprintf("[t-%v @ %03d-%03d] %v: `%v`", e.ErrorType.String(), e.StartPos, e.EndPos, e.ErrorMessage, string(e.Letters))
+}
+
+type ParserError struct {
+	ErrorType    ErrorType
+	ErrorMessage string
+	Tokens       []Token
+	StartPos     int
+	EndPos       int
+}
+
+func (e *ParserError) Error() string {
+	return fmt.Sprintf("[p-%v @ %03d-%03d] %v", e.ErrorType.String(), e.StartPos, e.EndPos, e.ErrorMessage)
 }
