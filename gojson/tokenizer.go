@@ -62,7 +62,7 @@ func (t *Tokenizer) ConsumeWhiteSpace() Token {
 	endPos := t.Pos
 
 	return Token{
-		Type:     WhiteSpace,
+		Type:     TWhiteSpace,
 		Data:     data,
 		StartPos: startPos,
 		EndPos:   endPos,
@@ -87,16 +87,16 @@ func (t *Tokenizer) ConsumeKeyword() (Token, error) {
 	var err error
 	switch string(data) {
 	case "true":
-		tokenType = True
+		tokenType = TTrue
 		err = nil
 	case "false":
-		tokenType = False
+		tokenType = TFalse
 		err = nil
 	case "null":
-		tokenType = Null
+		tokenType = TNull
 		err = nil
 	default:
-		tokenType = Unknown
+		tokenType = TUnknown
 		err = &TokenizerError{
 			ErrorType:    UndefinedKeywordError,
 			ErrorMessage: "undefined keyword",
@@ -119,7 +119,7 @@ func (t *Tokenizer) ConsumeNumber() (Token, error) {
 	startPos := t.Pos
 
 	for len(t.Letters) > t.Pos {
-		if unicode.IsDigit(t.Letter()) || t.Letter() == '.' || t.Letter() == '-' {
+		if unicode.IsDigit(t.Letter()) || t.Letter() == '.' || t.Letter() == '-' || t.Letter() == '+' {
 			data = append(data, t.Letter())
 			t.GoNext()
 		} else {
@@ -161,10 +161,26 @@ func (t *Tokenizer) ConsumeNumber() (Token, error) {
 			StartPos:     startPos,
 			EndPos:       endPos,
 		}
+	} else if strings.Contains(string(data), "+") && data[0] != '+' {
+		err = &TokenizerError{
+			ErrorType:    InvalidDataError,
+			ErrorMessage: "Plus must be at the beginning.",
+			Letters:      data,
+			StartPos:     startPos,
+			EndPos:       endPos,
+		}
+	} else if len(string(data))-len(strings.ReplaceAll(string(data), "+", "")) > 1 {
+		err = &TokenizerError{
+			ErrorType:    InvalidDataError,
+			ErrorMessage: "There must not be more than one plus.",
+			Letters:      data,
+			StartPos:     startPos,
+			EndPos:       endPos,
+		}
 	}
 
 	return Token{
-		Type:     Number,
+		Type:     TNumber,
 		Data:     data,
 		StartPos: startPos,
 		EndPos:   endPos,
@@ -199,7 +215,7 @@ func (t *Tokenizer) ConsumeString() (Token, error) {
 
 	var err error
 	return Token{
-		Type:     String,
+		Type:     TString,
 		Data:     data,
 		StartPos: startPos,
 		EndPos:   endPos,
@@ -223,7 +239,7 @@ func (t *Tokenizer) Tokenize() *[]Token {
 			continue
 		}
 
-		if unicode.IsDigit(t.Letter()) || t.Letter() == '-' {
+		if unicode.IsDigit(t.Letter()) || t.Letter() == '-' || t.Letter() == '+' {
 			token, err := t.ConsumeNumber()
 			if err != nil {
 				panic(err)
@@ -250,7 +266,7 @@ func (t *Tokenizer) Tokenize() *[]Token {
 
 		if t.Letter() == ',' {
 			tokens = append(tokens, Token{
-				Type:     Comma,
+				Type:     TComma,
 				Data:     []rune{t.Letter()},
 				StartPos: t.Pos,
 				EndPos:   t.Pos + 1,
@@ -261,7 +277,7 @@ func (t *Tokenizer) Tokenize() *[]Token {
 
 		if t.Letter() == ':' {
 			tokens = append(tokens, Token{
-				Type:     Colon,
+				Type:     TColon,
 				Data:     []rune{t.Letter()},
 				StartPos: t.Pos,
 				EndPos:   t.Pos + 1,
@@ -274,9 +290,9 @@ func (t *Tokenizer) Tokenize() *[]Token {
 		if t.Letter() == '{' || t.Letter() == '}' {
 			var tokenType TokenType
 			if t.Letter() == '{' {
-				tokenType = LCurlyBracket
+				tokenType = TLCurlyBracket
 			} else {
-				tokenType = RCurlyBracket
+				tokenType = TRCurlyBracket
 			}
 			tokens = append(tokens, Token{
 				Type:     tokenType,
@@ -292,9 +308,9 @@ func (t *Tokenizer) Tokenize() *[]Token {
 		if t.Letter() == '[' || t.Letter() == ']' {
 			var tokenType TokenType
 			if t.Letter() == '[' {
-				tokenType = LSquareBracket
+				tokenType = TLSquareBracket
 			} else {
-				tokenType = RSquareBracket
+				tokenType = TRSquareBracket
 			}
 			tokens = append(tokens, Token{
 				Type:     tokenType,
@@ -306,5 +322,13 @@ func (t *Tokenizer) Tokenize() *[]Token {
 			continue
 		}
 	}
+
+	tokens = append(tokens, Token{
+		Type:     TEof,
+		Data:     []rune{},
+		StartPos: t.Pos,
+		EndPos:   t.Pos + 1,
+	})
+
 	return &tokens
 }

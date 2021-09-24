@@ -73,65 +73,83 @@ func TestTokenizer_Tokenize(t *testing.T) {
 	}{
 		{"[true]", []Token{
 			{
-				Type:     LSquareBracket,
+				Type:     TLSquareBracket,
 				Data:     []rune{'['},
 				StartPos: 0,
 				EndPos:   1,
 			},
 			{
-				Type:     True,
+				Type:     TTrue,
 				Data:     []rune("true"),
 				StartPos: 1,
 				EndPos:   5,
 			},
 			{
-				Type:     RSquareBracket,
+				Type:     TRSquareBracket,
 				Data:     []rune{']'},
 				StartPos: 5,
 				EndPos:   6,
+			},
+			{
+				Type:     TEof,
+				Data:     []rune{},
+				StartPos: 6,
+				EndPos:   7,
 			},
 		}},
 		{
 			"\"hello\"", []Token{
 				{
-					Type:     String,
+					Type:     TString,
 					Data:     []rune("hello"),
 					StartPos: 0,
 					EndPos:   7,
+				},
+				{
+					Type:     TEof,
+					Data:     []rune{},
+					StartPos: 7,
+					EndPos:   8,
 				},
 			},
 		},
 		{
 			"{\"msg\": \"hello\"}", []Token{
 				{
-					Type:     LCurlyBracket,
+					Type:     TLCurlyBracket,
 					Data:     []rune("{"),
 					StartPos: 0,
 					EndPos:   1,
 				},
 				{
-					Type:     String,
+					Type:     TString,
 					Data:     []rune("msg"),
 					StartPos: 1,
 					EndPos:   6,
 				},
 				{
-					Type:     Colon,
+					Type:     TColon,
 					Data:     []rune(":"),
 					StartPos: 6,
 					EndPos:   7,
 				},
 				{
-					Type:     String,
+					Type:     TString,
 					Data:     []rune("hello"),
 					StartPos: 8,
 					EndPos:   15,
 				},
 				{
-					Type:     RCurlyBracket,
+					Type:     TRCurlyBracket,
 					Data:     []rune("}"),
 					StartPos: 15,
 					EndPos:   16,
+				},
+				{
+					Type:     TEof,
+					Data:     []rune{},
+					StartPos: 16,
+					EndPos:   17,
 				},
 			},
 		},

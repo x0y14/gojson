@@ -9,6 +9,7 @@ const (
 
 	InvalidDataError
 	UndefinedKeywordError
+	IllegalValueLoadingError
 
 	SyntaxError
 )
@@ -19,6 +20,8 @@ func (et ErrorType) String() string {
 		return "InvalidDataError"
 	case UndefinedKeywordError:
 		return "UndefinedKeywordError"
+	case IllegalValueLoadingError:
+		return "IllegalValueLoadingError"
 	case SyntaxError:
 		return "SyntaxError"
 	default:
@@ -44,6 +47,9 @@ type ParserError struct {
 	Tokens       []Token
 	StartPos     int
 	EndPos       int
+
+	AllowTypes []TokenType
+	ActualType TokenType
 }
 
 func (e *ParserError) Error() string {
