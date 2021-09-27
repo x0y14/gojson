@@ -42,7 +42,7 @@ func (p *Parser) IsValidToken() bool {
 	return p.Token().Type != TEof
 }
 
-func (p *Parser) Parse() (*Node, error) {
+func (p *Parser) Parse() (*Json, error) {
 	var nd *Node
 	var err error
 	for p.IsValidToken() {
@@ -68,7 +68,8 @@ func (p *Parser) Parse() (*Node, error) {
 			}
 		}
 	}
-	return nd, nil
+	j := NewJson(nd)
+	return j, nil
 }
 
 func (p *Parser) ParseObject() (*Node, error) {
@@ -268,7 +269,6 @@ func (p *Parser) ParseValue() (*Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		//nd = NewNode(NDObject, &[]Node{*child}, nil)
 		nd = child
 	case TLSquareBracket:
 		child, err := p.ParseArray()

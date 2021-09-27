@@ -123,3 +123,24 @@ func TestParser_ParseObject(t *testing.T) {
 		fmt.Printf("^^^ %v ^^^ \n  -> success: %v\n", tt.title, res)
 	}
 }
+
+func TestParser_Parse(t *testing.T) {
+	var tests = []struct {
+		title string
+		json  string
+	}{
+		{
+			"simple object",
+			"{\"msg\": \"hello\"}",
+		},
+	}
+
+	for _, tt := range tests {
+		ps := Setup(tt.json)
+		_, err := ps.ParseObject()
+		if err != nil {
+			t.Fatal(err)
+		}
+		assert.Equal(t, gojson.TEof, ps.Token().Type)
+	}
+}

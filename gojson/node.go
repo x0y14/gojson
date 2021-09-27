@@ -31,6 +31,15 @@ func (typ NodeType) String() string {
 	}
 }
 
+func NewNode(typ NodeType, nds *[]Node, key string, val *Token) *Node {
+	return &Node{
+		Type:     typ,
+		Children: nds,
+		Key:      key,
+		Val:      val,
+	}
+}
+
 type Node struct {
 	Type NodeType
 	// Children
@@ -39,13 +48,4 @@ type Node struct {
 	Children *[]Node
 	Key      string
 	Val      *Token
-}
-
-func NewNode(typ NodeType, nds *[]Node, key string, val *Token) *Node {
-	return &Node{
-		Type:     typ,
-		Children: nds,
-		Key:      key,
-		Val:      val,
-	}
 }
