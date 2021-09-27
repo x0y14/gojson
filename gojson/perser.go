@@ -4,33 +4,6 @@ import (
 	"fmt"
 )
 
-// EBNF rules?
-// https://github.com/cierelabs/yaml_spirit/blob/master/doc/specs/json-ebnf.txt
-//<Json> ::= <Object>
-//			| <Array>
-//
-//<Object> ::= '{' '}'
-//		| '{' <Members> '}'
-//
-//<Members> ::= <Pair>
-//| <Pair> ',' <Members>
-//
-//<Pair> ::= String ':' <Value>
-//
-//<Array> ::= '[' ']'
-//| '[' <Children> ']'
-//
-//<Children> ::= <Value>
-//| <Value> ',' <Children>
-//
-//<Value> ::= String
-//| Number
-//| <Object>
-//| <Array>
-//| true
-//| false
-//| null
-
 func NewParser(tokens *[]Token) *Parser {
 	return &Parser{
 		Tokens: *tokens,
