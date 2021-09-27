@@ -1,13 +1,35 @@
 package gojson
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // EBNF rules?
-// Json = Object | Array
-// - Object = "{" [Member] "}"
-//   - Member = String ":" Element
-// - Array = "[" [Element] "]"
-// - Element = Object | Array | String | Number | Boolean | Null
+// https://github.com/cierelabs/yaml_spirit/blob/master/doc/specs/json-ebnf.txt
+//<Json> ::= <Object>
+//			| <Array>
+//
+//<Object> ::= '{' '}'
+//		| '{' <Members> '}'
+//
+//<Members> ::= <Pair>
+//| <Pair> ',' <Members>
+//
+//<Pair> ::= String ':' <Value>
+//
+//<Array> ::= '[' ']'
+//| '[' <Children> ']'
+//
+//<Children> ::= <Value>
+//| <Value> ',' <Children>
+//
+//<Value> ::= String
+//| Number
+//| <Object>
+//| <Array>
+//| true
+//| false
+//| null
 
 func NewParser(tokens *[]Token) *Parser {
 	return &Parser{
@@ -36,162 +58,51 @@ func (p *Parser) PrevToken() Token {
 }
 
 func (p *Parser) GoNext() {
-	//if p.Pos > 0 {
-	//	fmt.Printf("[%03d] `%v` -> ", p.Pos-1, string(p.PrevToken().Data))
-	//} else {
-	//	fmt.Printf("SOF -> ")
-	//}
-
-	//if len(p.Tokens) > p.Pos {
-	//	fmt.Printf("[%03d] `%v` -> ", p.Pos, string(p.Token().Data))
-	//}
 	p.Pos++
-	//if len(p.Tokens) > p.Pos {
-	//	fmt.Printf("[%03d] `%v`\n", p.Pos, string(p.Token().Data))
-	//} else {
-	//	fmt.Printf("EOF\n")
-	//}
 }
 
 func (p *Parser) GoPrev() {
 	p.Pos--
 }
 
-func (p *Parser) ParseMember() (*[]Member, error) {
-	fmt.Printf("[*] call ParseMember\n")
-	var members []Member
+func (p *Parser) IsValidToken() bool {
+	return p.Token().Type != TEof
+}
 
-	// Member <String : Element>
-	// 		  [<String : Element> ","]
-
-	for len(p.Tokens) > p.Pos {
-		key := p.Token()
-		if key.Type != TString {
-			return nil, &ParserError{
-				ErrorType:    SyntaxError,
-				ErrorMessage: fmt.Sprintf("expected `TString`, but found `%v`", key.Type.String()),
-				Tokens:       nil,
-				StartPos:     0,
-				EndPos:       0,
-				AllowTypes:   nil,
-				ActualType:   0,
-			}
-		}
-		// go to the next of key
-		p.GoNext()
-
-		if colon := p.Token(); colon.Type != TColon {
-			return nil, &ParserError{
-				ErrorType:    SyntaxError,
-				ErrorMessage: fmt.Sprintf("expected `TColon`, but found `%v`", colon.Type.String()),
-				Tokens:       nil,
-				StartPos:     0,
-				EndPos:       0,
-				AllowTypes:   nil,
-				ActualType:   0,
-			}
-		}
-		// go to the next of colon
-		p.GoNext()
-
-		valueToken := p.Token()
-		var value interface{}
-		var err error
-
-		switch valueToken.Type {
-		case TLCurlyBracket:
-			value, err = p.ParseObject()
+func (p *Parser) Parse() (*Node, error) {
+	var nd *Node
+	var err error
+	for p.IsValidToken() {
+		if p.Token().Type == TLCurlyBracket {
+			nd, err = p.ParseObject()
 			if err != nil {
 				return nil, err
 			}
-			// At ParseObject,
-			// Since GoNext() is called at the end of the function, no operation is required on this side.
-			p.GoNext()
-		case TString:
-			value = valueToken.LoadAsString()
-			p.GoNext()
-		case TTrue, TFalse:
-			value = valueToken.LoadAsBoolean()
-			p.GoNext()
-		case TNumber:
-			value = valueToken.LoadAsFloat64()
-			p.GoNext()
-		case TNull:
-			value = valueToken.LoadAsNull()
-			p.GoNext()
-			// todo : ParseArray
-		}
-
-		members = append(members, Member{
-			Key:   key.LoadAsString(),
-			Value: value,
-		})
-
-		if comma := p.Token(); comma.Type != TComma {
-			break
+		} else if p.Token().Type == TLSquareBracket {
+			nd, err = p.ParseArray()
+			if err != nil {
+				return nil, err
+			}
 		} else {
-			// go to the next of comma
-			p.GoNext()
+			return nil, &ParserError{
+				ErrorType:    SyntaxError,
+				ErrorMessage: fmt.Sprintf("expected `[` or `{`, but found `%v`", string(p.Token().Data)),
+				Tokens:       nil,
+				StartPos:     0,
+				EndPos:       0,
+				AllowTypes:   nil,
+				ActualType:   0,
+			}
 		}
 	}
-
-	return &members, nil
+	return nd, nil
 }
 
-func (p *Parser) ParseObject() (map[string]interface{}, error) {
-	fmt.Printf("[*] call ParseObject\n")
-
-	obj := map[string]interface{}{}
-
-	// {
-	if lCurly := p.Token(); lCurly.Type != TLCurlyBracket {
+func (p *Parser) ParseObject() (*Node, error) {
+	if p.Token().Type != TLCurlyBracket {
 		return nil, &ParserError{
 			ErrorType:    SyntaxError,
-			ErrorMessage: fmt.Sprintf("expected `TLCurlyBracket` but found `%v`", lCurly.Type.String()),
-			Tokens:       []Token{lCurly},
-			StartPos:     lCurly.StartPos,
-			EndPos:       lCurly.EndPos,
-			AllowTypes:   nil,
-			ActualType:   0,
-		}
-	}
-	// go to the next of lCurly
-	p.GoNext()
-
-	stringOrRCurly := p.Token()
-	fmt.Printf(">> stringOrRCurly : %v(%v) <<\n", string(stringOrRCurly.Data), stringOrRCurly.Type.String())
-	switch stringOrRCurly.Type {
-	case TString:
-		members, err := p.ParseMember()
-		if err != nil {
-			return nil, err
-		}
-
-		for _, member := range *members {
-			obj[member.Key] = member.Value
-		}
-
-		//if exceptRCurly := p.Token(); exceptRCurly.Type != TRCurlyBracket {
-		//	return nil, &ParserError{
-		//				ErrorType:    SyntaxError,
-		//				ErrorMessage: fmt.Sprintf("expected `TRCurlyBracket`, but found `%v\n`", exceptRCurly.Type.String()),
-		//				Tokens:       nil,
-		//				StartPos:     0,
-		//				EndPos:       0,
-		//				AllowTypes:   nil,
-		//				ActualType:   0,
-		//			}
-		//} else {
-		//	break
-		//}
-	case TRCurlyBracket:
-		// empty map
-		p.GoNext()
-		break
-	default:
-		return nil, &ParserError{
-			ErrorType:    SyntaxError,
-			ErrorMessage: fmt.Sprintf("expected `TString` or `TRCurlyBracket`, but found `%v\n`", stringOrRCurly.Type.String()),
+			ErrorMessage: fmt.Sprintf("expected `{`, but found `%v`", string(p.Token().Data)),
 			Tokens:       nil,
 			StartPos:     0,
 			EndPos:       0,
@@ -199,45 +110,199 @@ func (p *Parser) ParseObject() (map[string]interface{}, error) {
 			ActualType:   0,
 		}
 	}
+	// consume '{'
+	p.GoNext()
 
-	fmt.Printf(">> end of ParseObject : `%v` (%v) <<\n", string(p.Token().Data), p.Token().Type.String())
+	members, err := p.ParseMember()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.Token().Type != TRCurlyBracket {
+		return nil, &ParserError{
+			ErrorType:    SyntaxError,
+			ErrorMessage: fmt.Sprintf("expected `}`, but found `%v`", string(p.Token().Data)),
+			Tokens:       nil,
+			StartPos:     0,
+			EndPos:       0,
+			AllowTypes:   nil,
+			ActualType:   0,
+		}
+	}
+	// consume '}'
+	p.GoNext()
+
+	// { } eof
+	//      ^
+	// now we are in eof
+
+	//if p.Token().Type != TEof {
+	//	return nil, &ParserError{
+	//		ErrorType:    SyntaxError,
+	//		ErrorMessage: fmt.Sprintf("expected `EOF`, but found `%v`", string(p.Token().Data)),
+	//		Tokens:       nil,
+	//		StartPos:     0,
+	//		EndPos:       0,
+	//		AllowTypes:   nil,
+	//		ActualType:   0,
+	//	}
+	//}
+
+	obj := NewNode(NDObject, members, "", nil)
 
 	return obj, nil
 }
 
-func (p *Parser) ParseArray() ([]interface{}, error) {
-	fmt.Printf("[*] call ParseObject\n")
-	return nil, nil
+func (p *Parser) ParseMember() (*[]Node, error) {
+	var member []Node
+
+ValueLoop:
+	for p.IsValidToken() {
+		token := p.Token()
+		switch token.Type {
+		case TString:
+			pair, err := p.ParsePair()
+			if err != nil {
+				return nil, nil
+			}
+			member = append(member, *pair)
+		case TComma:
+			p.GoNext()
+			continue
+		default:
+			break ValueLoop
+		}
+	}
+
+	return &member, nil
 }
 
-func (p *Parser) Parse() (interface{}, error) {
-	var obj interface{}
-	for len(p.Tokens) > p.Pos {
+func (p *Parser) ParsePair() (*Node, error) {
+	tkKey := p.Token()
+	if tkKey.Type != TString {
+		return nil, &ParserError{
+			ErrorType:    SyntaxError,
+			ErrorMessage: fmt.Sprintf("expected `TString`, but found `%v`", string(p.Token().Data)),
+			Tokens:       nil,
+			StartPos:     0,
+			EndPos:       0,
+			AllowTypes:   nil,
+			ActualType:   0,
+		}
+	}
+	p.GoNext()
+
+	if tkColon := p.Token(); tkColon.Type != TColon {
+		return nil, &ParserError{
+			ErrorType:    SyntaxError,
+			ErrorMessage: fmt.Sprintf("expected `:`, but found `%v`", string(p.Token().Data)),
+			Tokens:       nil,
+			StartPos:     0,
+			EndPos:       0,
+			AllowTypes:   nil,
+			ActualType:   0,
+		}
+	}
+	// consume ":"
+	p.GoNext()
+
+	tkVal, err := p.ParseValue()
+	if err != nil {
+		return nil, err
+	}
+
+	pair := NewNode(NDPair, &[]Node{*tkVal}, string(tkKey.Data), nil)
+
+	return pair, nil
+}
+
+func (p *Parser) ParseArray() (*Node, error) {
+	token := p.Token()
+	if token.Type != TLSquareBracket {
+		return nil, &ParserError{
+			ErrorType:    SyntaxError,
+			ErrorMessage: fmt.Sprintf("expect `[`, but found %v", string(token.Data)),
+			Tokens:       nil,
+			StartPos:     0,
+			EndPos:       0,
+			AllowTypes:   nil,
+			ActualType:   0,
+		}
+	}
+	// consume '['
+	p.GoNext()
+
+	el, err := p.ParseElement()
+	if err != nil {
+		return nil, err
+	}
+
+	token = p.Token()
+	if token.Type != TRSquareBracket {
+		return nil, &ParserError{
+			ErrorType:    SyntaxError,
+			ErrorMessage: fmt.Sprintf("expect `]`, but found %v", string(token.Data)),
+			Tokens:       nil,
+			StartPos:     0,
+			EndPos:       0,
+			AllowTypes:   nil,
+			ActualType:   0,
+		}
+	}
+	// consume ']'
+	p.GoNext()
+
+	arr := NewNode(NDArray, el, "", nil)
+
+	return arr, nil
+}
+
+func (p *Parser) ParseElement() (*[]Node, error) {
+	var children []Node
+
+ValueLoop:
+	for p.IsValidToken() {
+		fmt.Printf("[ParseElement @ %v-%v] `%v` (%v)\n", p.Token().StartPos, p.Token().EndPos, string(p.Token().Data), p.Token().Type.String())
 		switch p.Token().Type {
-		case TLCurlyBracket:
-			obj, err := p.ParseObject()
+		case TString, TNumber, TTrue, TFalse, TNull, TLCurlyBracket, TLSquareBracket:
+			nd, err := p.ParseValue()
 			if err != nil {
 				return nil, err
 			}
-			return obj, nil
-		case TLSquareBracket:
-			obj, err := p.ParseArray()
-			if err != nil {
-				return nil, err
-			}
-			return obj, nil
+			children = append(children, *nd)
+		case TComma:
+			p.GoNext()
+			continue
+		default:
+			break ValueLoop
 		}
-
-		p.GoNext()
 	}
-	return obj, nil
+
+	return &children, nil
 }
 
-func IsTypeAllowed(allowing []TokenType, tokenType TokenType) bool {
-	for _, tType := range allowing {
-		if tType == tokenType {
-			return true
+func (p *Parser) ParseValue() (*Node, error) {
+	token := p.Token()
+	var nd *Node
+
+	switch token.Type {
+	// their kinds can access the value directly
+	case TString, TNumber, TTrue, TFalse, TNull:
+		nd = NewNode(NDValue, nil, "", &token)
+		p.GoNext()
+	case TLCurlyBracket:
+		child, err := p.ParseObject()
+		if err != nil {
+			return nil, err
 		}
+		//nd = NewNode(NDObject, &[]Node{*child}, nil)
+		nd = child
+	case TLSquareBracket:
+		child, err := p.ParseArray()
+		if err != nil {
+			return nil, err
+		}
+		nd = child
 	}
-	return false
+	return nd, nil
 }

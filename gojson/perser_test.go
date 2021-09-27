@@ -1,158 +1,125 @@
-package gojson
+package gojson_test
 
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"github.com/x0y14/gojson/gojson"
 	"testing"
 )
 
-func TestNewParser(t *testing.T) {
+func Setup(json string) *gojson.Parser {
+	tk := gojson.NewTokenizer(json)
+	ps := gojson.NewParser(tk.Tokenize())
+	return ps
 }
 
-func TestParser_Parse(t *testing.T) {
+func TestShowPos(t *testing.T) {
+	gojson.ShowPos("{\"msg\": \"hello\", \"in\": {\"age\": 20}}")
 }
 
-//func TestParser_ParseError(t *testing.T) {
-//	var tests = []struct {
-//		name string
-//		json string
-//		want error
-//	}{
-//		{
-//			"unpacked curly brackets",
-//			"{\"msg\": \"hello\"",
-//			&ParserError{
-//				ErrorType:    SyntaxError,
-//				ErrorMessage: "Unpacked Curly Bracket",
-//				Tokens:       nil,
-//				StartPos:     0,
-//				EndPos:       0,
-//			},
-//		},
-//		{
-//			"unpacked square brackets",
-//			"[",
-//			&ParserError{
-//				ErrorType:    SyntaxError,
-//				ErrorMessage: "Unpacked Square Bracket",
-//				Tokens:       nil,
-//				StartPos:     0,
-//				EndPos:       0,
-//			},
-//		},
-//	}
-//
-//	//for _, tt := range tests {
-//	//	tk := NewTokenizer(tt.json)
-//		//ps := NewParser(tk.Tokenize())
-//		//assert.Equal(t, tt.want, ps.Parse())
-//	//}
-//}
-
-func TestParser_ParseObject(t *testing.T) {
+func TestParser_ParseArray(t *testing.T) {
 	var tests = []struct {
-		name string
-		json string
-		key  string
-		want interface{}
+		title  string
+		json   string
+		expect interface{}
 	}{
 		{
-			"string",
-			"{\"msg\": \"hello\"}",
-			"msg",
-			"hello",
+			"array only",
+			"[\"string\", 123, true, false, null]",
+			gojson.NewNode(gojson.NDArray, &[]gojson.Node{
+				*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TString, "string", 1, 9)),
+				*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TNumber, "123", 11, 14)),
+				*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TTrue, "true", 16, 20)),
+				*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TFalse, "false", 22, 27)),
+				*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TNull, "null", 29, 33)),
+			}, "", nil),
 		},
 		{
-			"number",
-			"{\"age\":20}",
-			"age",
-			float64(20),
+			"array in array",
+			"[[\"hello\", \"world\"]]",
+			gojson.NewNode(gojson.NDArray, &[]gojson.Node{
+				*gojson.NewNode(gojson.NDArray, &[]gojson.Node{
+					*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TString, "hello", 2, 9)),
+					*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TString, "world", 11, 18)),
+				}, "", nil),
+			}, "", nil),
 		},
 		{
-			"boolean",
-			"{\"dark_theme\": true}",
-			"dark_theme",
-			true,
-		},
-		{
-			"null",
-			"{\"my_money\": null}",
-			"my_money",
-			nil,
-		},
-		{
-			"map in map",
-			"{\"config\": {\"alarm\": true}}",
-			"config",
-			map[string]interface{}{"alarm": true},
-		},
-		{
-			"multiple map",
-			"{\"my_age\":21, \"sister_age\":18}",
-			"my_age",
-			float64(21),
-		},
-		{
-			"map and int",
-			"{\"info\": {\"alarm\": true}, \"age\": 64}",
-			"age",
-			float64(64),
-		},
-		{
-			"multi in map",
-			"{\"a\":{\"b\": true, \"c\": null}}",
-			"a",
-			map[string]interface{}{"b": true, "c": nil},
-		},
-		{
-			"multiple map value1",
-			"{\"a\":{\"alarm\": true}, \"b\":{\"alarm2\": false}}",
-			"b",
-			map[string]interface{}{"alarm2": false},
-		},
-		{
-			"multiple map value2",
-			"{\"a\":{\"alarm\": true}, \"b\":{\"alarm2\": false}}",
-			"a",
-			map[string]interface{}{"alarm": true},
-		},
-		{
-			"multiple map value3",
-			"{\"a\":{}, \"b\":{}}",
-			"b",
-			map[string]interface{}{},
+			"array and other",
+			"[123, [\"hello\", \"world\"], \"321\"]",
+			gojson.NewNode(gojson.NDArray, &[]gojson.Node{
+				*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TNumber, "123", 1, 4)),
+				*gojson.NewNode(gojson.NDArray, &[]gojson.Node{
+					*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TString, "hello", 7, 14)),
+					*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TString, "world", 16, 23)),
+				}, "", nil),
+				*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TString, "321", 26, 31)),
+			}, "", nil),
 		},
 	}
+
 	for _, tt := range tests {
-		tk := NewTokenizer(tt.json)
-		ps := NewParser(tk.Tokenize())
-		fmt.Printf("\ntry: %v\n", tt.name)
-		obj, err := ps.ParseObject()
+		ps := Setup(tt.json)
+		actual, err := ps.ParseArray()
 		if err != nil {
 			t.Fatal(err)
 		}
-		if res := assert.Equal(t, tt.want, obj[tt.key]); res == true {
-			fmt.Printf("    -> success\n")
-		} else {
-			fmt.Printf("    -> failure\n")
-		}
+		res := assert.Equal(t, tt.expect, actual)
+		fmt.Printf("^^^ %v ^^^ \n  -> success: %v\n", tt.title, res)
 	}
 }
 
-//func TestParser_ParseArray(t *testing.T) {
-//	var tests = []struct{
-//		name string
-//		json string
-//		index int
-//		want interface{}
-//	}{
-//		{},
-//	}
-//	for _, tt := range tests {
-//		tk := NewTokenizer(tt.json)
-//		ps := NewParser(tk.Tokenize())
-//		_ = ps.ParseArray()
-//		//log.Printf("try: %v\n", tt.name)
-//		//assert.Equal(t, tt.want, obj[tt.key])
-//	}
-//}
+func TestParser_ParseObject(t *testing.T) {
+	var tests = []struct {
+		title  string
+		json   string
+		expect interface{}
+	}{
+		{
+			"simple object",
+			"{\"msg\": \"hello\"}",
+			gojson.NewNode(gojson.NDObject, &[]gojson.Node{
+				*gojson.NewNode(gojson.NDPair, &[]gojson.Node{
+					*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TString, "hello", 8, 15)),
+				}, "msg", nil),
+			}, "", nil),
+		},
+		{
+			"object multi key",
+			"{\"msg\":\"hello\", \"age\": 20}",
+			gojson.NewNode(gojson.NDObject, &[]gojson.Node{
+				*gojson.NewNode(gojson.NDPair, &[]gojson.Node{
+					*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TString, "hello", 7, 14)),
+				}, "msg", nil),
+				*gojson.NewNode(gojson.NDPair, &[]gojson.Node{
+					*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TNumber, "20", 23, 25)),
+				}, "age", nil),
+			}, "", nil),
+		},
+		{
+			"object in object",
+			"{\"msg\": \"hello\", \"in\": {\"age\": 20}}",
+			gojson.NewNode(gojson.NDObject, &[]gojson.Node{
+				*gojson.NewNode(gojson.NDPair, &[]gojson.Node{
+					*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TString, "hello", 8, 15)),
+				}, "msg", nil),
+				*gojson.NewNode(gojson.NDPair, &[]gojson.Node{
+					*gojson.NewNode(gojson.NDObject, &[]gojson.Node{
+						*gojson.NewNode(gojson.NDPair, &[]gojson.Node{
+							*gojson.NewNode(gojson.NDValue, nil, "", gojson.NewToken(gojson.TNumber, "20", 31, 33)),
+						}, "age", nil),
+					}, "", nil),
+				}, "in", nil),
+			}, "", nil),
+		},
+	}
+	for _, tt := range tests {
+		ps := Setup(tt.json)
+		actual, err := ps.ParseObject()
+		if err != nil {
+			t.Fatal(err)
+		}
+		res := assert.Equal(t, tt.expect, actual)
+		fmt.Printf("^^^ %v ^^^ \n  -> success: %v\n", tt.title, res)
+	}
+}

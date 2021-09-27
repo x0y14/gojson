@@ -64,6 +64,15 @@ func (tokenType TokenType) String() string {
 	}
 }
 
+func NewToken(typ TokenType, dataStr string, startPos int, endPos int) *Token {
+	return &Token{
+		Type:     typ,
+		Data:     []rune(dataStr),
+		StartPos: startPos,
+		EndPos:   endPos,
+	}
+}
+
 func (t *Token) LoadAsFloat64() float64 {
 	if t.Type != TNumber {
 		panic(&TokenizerError{

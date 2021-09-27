@@ -8,7 +8,7 @@ package gojson
 // - Element = Object | Array | String | Number | Boolean | Null
 
 type Json struct {
-	//Elements []Element
+	//Children []Element
 }
 
 //type ElementType int

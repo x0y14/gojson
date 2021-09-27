@@ -55,3 +55,16 @@ type ParserError struct {
 func (e *ParserError) Error() string {
 	return fmt.Sprintf("[p-%v @ %03d-%03d] %v", e.ErrorType.String(), e.StartPos, e.EndPos, e.ErrorMessage)
 }
+
+//func NewSyntaxError(expect []TokenType, actual Token) *ParserError {
+//	//fmt.Sprintf("expected `[` or `{`, but found `%v`", string(p.Token().Data))
+//	return &ParserError{
+//		ErrorType:    0,
+//		ErrorMessage: fmt.Sprintf("expected `[` or `{`, but found `%v`", string(p.Token().Data)),
+//		Tokens:       nil,
+//		StartPos:     0,
+//		EndPos:       0,
+//		AllowTypes:   nil,
+//		ActualType:   0,
+//	}
+//}
