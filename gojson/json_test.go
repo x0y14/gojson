@@ -102,5 +102,15 @@ func TestJson_Map2(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	nd.Map()
+	mp, err := nd.Map()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, "hello", mp["msg"])
+	assert.Equal(t, map[string]interface{}{"age": float64(26), "name": "john"}, mp["sub"])
+	assert.Equal(t, []interface{}{"tanaka", "sadako"}, mp["members"])
+
+	members := mp["members"].([]interface{})
+	//fmt.Printf("%v", members[0])
+	assert.Equal(t, "sadako", members[1])
 }
