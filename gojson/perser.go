@@ -236,7 +236,7 @@ func (p *Parser) ParseElement() (*[]Node, error) {
 
 ValueLoop:
 	for p.IsValidToken() {
-		fmt.Printf("[ParseElement @ %v-%v] `%v` (%v)\n", p.Token().StartPos, p.Token().EndPos, string(p.Token().Data), p.Token().Type.String())
+		//fmt.Printf("[ParseElement @ %v-%v] `%v` (%v)\n", p.Token().StartPos, p.Token().EndPos, string(p.Token().Data), p.Token().Type.String())
 		switch p.Token().Type {
 		case TString, TNumber, TTrue, TFalse, TNull, TLCurlyBracket, TLSquareBracket:
 			nd, err := p.ParseValue()
