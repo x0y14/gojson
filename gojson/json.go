@@ -35,22 +35,17 @@ type Json struct {
 	node *Node
 }
 
+func (j *Json) Map() map[string]interface{} {
+	return nil
+}
+
 func (j *Json) Tree() {
-	//nest := 0
 	rootNode := j.node
-	//for _, child := range *rootNode.Children {
-	//	fmt.Printf("%v\n", child.Type)
-	//}
 	switch rootNode.Type {
 	case NDObject:
-		//for _, member := range *rootNode.Children {
-		//	j.ObjectTree(&member)
-		//}
 		j.ObjectTree(1, j.node)
 	case NDArray:
-		//for _, __ := range *rootNode.Children {
-		//
-		//}
+		j.ArrayTree(1, j.node)
 	}
 }
 
