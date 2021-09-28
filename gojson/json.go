@@ -25,20 +25,112 @@ import (
 //           | Object
 //           | Array
 
-func NewJson(node *Node) *Json {
+func NewJson(node *Node, rootNodeType NodeType) *Json {
 	return &Json{
-		node: node,
+		node:         node,
+		RootNodeType: rootNodeType,
 	}
 }
 
 type Json struct {
-	node *Node
+	node         *Node
+	RootNodeType NodeType
 }
 
-func (j *Json) Map() map[string]interface{} {
-	return nil
+func (j *Json) Map() (map[string]interface{}, error) {
+	if j.RootNodeType != NDObject {
+		panic(JsonError{})
+	}
+
+	mp, err := j.ObjectMapping(j.node)
+	if err != nil {
+		return nil, err
+	}
+
+	return mp, nil
 }
 
+func (j *Json) ObjectMapping(obj *Node) (map[string]interface{}, error) {
+	result := map[string]interface{}{}
+
+	for _, pair := range *obj.Children {
+		key, val, err := j.PairMapping(&pair)
+		if err != nil {
+			return nil, err
+		}
+
+		result[key] = val
+	}
+	return result, nil
+}
+
+func (j *Json) PairMapping(pair *Node) (string, interface{}, error) {
+	key := pair.Key
+	children := *pair.Children
+	child := children[0]
+	var value interface{}
+	var err error
+
+	switch child.Type {
+	case NDObject:
+		value, err = j.ObjectMapping(&child)
+		if err != nil {
+			return "", nil, err
+		}
+	case NDArray:
+		value, err = j.ArrayMapping(&child)
+	default:
+		value = j.ValueMapping(&child)
+	}
+	return key, value, nil
+}
+
+func (j *Json) ArrayMapping(arr *Node) ([]interface{}, error) {
+	var result []interface{}
+	for _, element := range *arr.Children {
+		value, err := j.ElementMapping(&element)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, value)
+	}
+	return result, nil
+}
+
+func (j *Json) ElementMapping(element *Node) (interface{}, error) {
+	switch element.Type {
+	case NDObject:
+		value, err := j.ObjectMapping(element)
+		if err != nil {
+			return nil, err
+		}
+		return value, nil
+	case NDArray:
+		value, err := j.ArrayMapping(element)
+		if err != nil {
+			return nil, err
+		}
+		return value, nil
+	default:
+		value := j.ValueMapping(element)
+		return value, nil
+	}
+}
+
+func (j *Json) ValueMapping(val *Node) interface{} {
+	switch val.Val.Type {
+	case TTrue, TFalse:
+		return val.Val.LoadAsBoolean()
+	case TNumber:
+		return val.Val.LoadAsFloat64()
+	case TString:
+		return val.Val.LoadAsString()
+	default:
+		return val.Val.LoadAsNull()
+	}
+}
+
+// Tree show only
 func (j *Json) Tree() {
 	rootNode := j.node
 	switch rootNode.Type {

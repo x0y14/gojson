@@ -44,16 +44,22 @@ func (e *TokenizerError) Error() string {
 type ParserError struct {
 	ErrorType    ErrorType
 	ErrorMessage string
-	Tokens       []Token
 	StartPos     int
 	EndPos       int
 
-	AllowTypes []TokenType
-	ActualType TokenType
+	ExpectedType []TokenType
+	FoundType    TokenType
 }
 
 func (e *ParserError) Error() string {
 	return fmt.Sprintf("[p-%v @ %03d-%03d] %v", e.ErrorType.String(), e.StartPos, e.EndPos, e.ErrorMessage)
+}
+
+type JsonError struct {
+}
+
+func (e *JsonError) Error() string {
+	return fmt.Sprintf("json error")
 }
 
 //func NewSyntaxError(expect []TokenType, actual Token) *ParserError {

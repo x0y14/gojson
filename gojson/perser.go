@@ -45,30 +45,33 @@ func (p *Parser) IsValidToken() bool {
 func (p *Parser) Parse() (*Json, error) {
 	var nd *Node
 	var err error
+	var rootNodeType NodeType
 	for p.IsValidToken() {
 		if p.Token().Type == TLCurlyBracket {
 			nd, err = p.ParseObject()
 			if err != nil {
 				return nil, err
 			}
+			rootNodeType = NDObject
 		} else if p.Token().Type == TLSquareBracket {
 			nd, err = p.ParseArray()
 			if err != nil {
 				return nil, err
 			}
+			rootNodeType = NDArray
 		} else {
+			tk := p.Token()
 			return nil, &ParserError{
 				ErrorType:    SyntaxError,
-				ErrorMessage: fmt.Sprintf("expected `[` or `{`, but found `%v`", string(p.Token().Data)),
-				Tokens:       nil,
-				StartPos:     0,
-				EndPos:       0,
-				AllowTypes:   nil,
-				ActualType:   0,
+				ErrorMessage: fmt.Sprintf("expected `[` or `{`, but found `%v`", string(tk.Data)),
+				StartPos:     tk.StartPos,
+				EndPos:       tk.EndPos,
+				ExpectedType: []TokenType{TLSquareBracket, TLCurlyBracket},
+				FoundType:    tk.Type,
 			}
 		}
 	}
-	j := NewJson(nd)
+	j := NewJson(nd, rootNodeType)
 	return j, nil
 }
 
@@ -77,11 +80,10 @@ func (p *Parser) ParseObject() (*Node, error) {
 		return nil, &ParserError{
 			ErrorType:    SyntaxError,
 			ErrorMessage: fmt.Sprintf("expected `{`, but found `%v`", string(p.Token().Data)),
-			Tokens:       nil,
-			StartPos:     0,
-			EndPos:       0,
-			AllowTypes:   nil,
-			ActualType:   0,
+			StartPos:     p.Token().StartPos,
+			EndPos:       p.Token().EndPos,
+			ExpectedType: []TokenType{TLCurlyBracket},
+			FoundType:    p.Token().Type,
 		}
 	}
 	// consume '{'
@@ -96,11 +98,10 @@ func (p *Parser) ParseObject() (*Node, error) {
 		return nil, &ParserError{
 			ErrorType:    SyntaxError,
 			ErrorMessage: fmt.Sprintf("expected `}`, but found `%v`", string(p.Token().Data)),
-			Tokens:       nil,
-			StartPos:     0,
-			EndPos:       0,
-			AllowTypes:   nil,
-			ActualType:   0,
+			StartPos:     p.Token().StartPos,
+			EndPos:       p.Token().EndPos,
+			ExpectedType: []TokenType{TRCurlyBracket},
+			FoundType:    p.Token().Type,
 		}
 	}
 	// consume '}'
@@ -115,8 +116,8 @@ func (p *Parser) ParseObject() (*Node, error) {
 	//		ErrorType:    SyntaxError,
 	//		ErrorMessage: fmt.Sprintf("expected `EOF`, but found `%v`", string(p.Token().Data)),
 	//		Tokens:       nil,
-	//		StartPos:     0,
-	//		EndPos:       0,
+	//		StartPos:     p.Token().StartPos,
+	//		EndPos:       p.Token(.EndPos,
 	//		AllowTypes:   nil,
 	//		ActualType:   0,
 	//	}
@@ -157,11 +158,10 @@ func (p *Parser) ParsePair() (*Node, error) {
 		return nil, &ParserError{
 			ErrorType:    SyntaxError,
 			ErrorMessage: fmt.Sprintf("expected `TString`, but found `%v`", string(p.Token().Data)),
-			Tokens:       nil,
-			StartPos:     0,
-			EndPos:       0,
-			AllowTypes:   nil,
-			ActualType:   0,
+			StartPos:     p.Token().StartPos,
+			EndPos:       p.Token().EndPos,
+			ExpectedType: []TokenType{TString},
+			FoundType:    p.Token().Type,
 		}
 	}
 	p.GoNext()
@@ -170,11 +170,10 @@ func (p *Parser) ParsePair() (*Node, error) {
 		return nil, &ParserError{
 			ErrorType:    SyntaxError,
 			ErrorMessage: fmt.Sprintf("expected `:`, but found `%v`", string(p.Token().Data)),
-			Tokens:       nil,
-			StartPos:     0,
-			EndPos:       0,
-			AllowTypes:   nil,
-			ActualType:   0,
+			StartPos:     p.Token().StartPos,
+			EndPos:       p.Token().EndPos,
+			ExpectedType: []TokenType{TColon},
+			FoundType:    p.Token().Type,
 		}
 	}
 	// consume ":"
@@ -196,11 +195,10 @@ func (p *Parser) ParseArray() (*Node, error) {
 		return nil, &ParserError{
 			ErrorType:    SyntaxError,
 			ErrorMessage: fmt.Sprintf("expect `[`, but found %v", string(token.Data)),
-			Tokens:       nil,
-			StartPos:     0,
-			EndPos:       0,
-			AllowTypes:   nil,
-			ActualType:   0,
+			StartPos:     p.Token().StartPos,
+			EndPos:       p.Token().EndPos,
+			ExpectedType: []TokenType{TLSquareBracket},
+			FoundType:    p.Token().Type,
 		}
 	}
 	// consume '['
@@ -216,11 +214,10 @@ func (p *Parser) ParseArray() (*Node, error) {
 		return nil, &ParserError{
 			ErrorType:    SyntaxError,
 			ErrorMessage: fmt.Sprintf("expect `]`, but found %v", string(token.Data)),
-			Tokens:       nil,
-			StartPos:     0,
-			EndPos:       0,
-			AllowTypes:   nil,
-			ActualType:   0,
+			StartPos:     p.Token().StartPos,
+			EndPos:       p.Token().EndPos,
+			ExpectedType: []TokenType{TRSquareBracket},
+			FoundType:    p.Token().Type,
 		}
 	}
 	// consume ']'
