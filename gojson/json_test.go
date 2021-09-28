@@ -9,7 +9,13 @@ func TestJson_Tree(t *testing.T) {
 	}{
 		{
 			"simple object",
-			"{\"msg\": \"hello\", \"sub\": {\"age\": 26, \"name\": \"john\"}, \"members\": [\"tanaka\", \"sadako\"]}",
+			"{" +
+				"\"msg\": \"hello\", " +
+				"\"sub\": {\"age\": 26, \"name\": \"john\"}, " +
+				"\"members\": [\"tanaka\", \"sadako\"], " +
+				"\"users\": [" +
+				"{\"name\":\"john\", \"age\": 35, \"active\": true, \"skill\": \"jump\"}, " +
+				"{\"name\":\"tom\", \"age\": 12, \"active\": false, \"skill\": null}]}",
 		},
 	}
 
