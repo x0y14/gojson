@@ -86,3 +86,21 @@ func TestJson_Map(t *testing.T) {
 		assert.Equal(t, "hello", mp["msg"])
 	}
 }
+
+func TestJson_Map2(t *testing.T) {
+	json := "{" +
+		"\"msg\": \"hello\", " +
+		"\"sub\": {\"age\": 26, \"name\": \"john\"}, " +
+		"\"members\": [\"tanaka\", \"sadako\"], " +
+		"\"users\": [" +
+		"{\"name\":\"john\", \"age\": 35, \"active\": true, \"skill\": \"jump\"}, " +
+		"{\"name\":\"tom\", \"age\": 12, \"active\": false, \"skill\": null}]" +
+		"}"
+	tk := NewTokenizer(json)
+	ps := NewParser(tk.Tokenize())
+	nd, err := ps.Parse()
+	if err != nil {
+		t.Fatal(err)
+	}
+	nd.Map()
+}

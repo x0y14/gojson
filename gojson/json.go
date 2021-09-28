@@ -42,12 +42,25 @@ func (j *Json) Map() (map[string]interface{}, error) {
 		panic(JsonError{})
 	}
 
-	mp, err := j.ObjectMapping(j.node)
+	obj, err := j.ObjectMapping(j.node)
 	if err != nil {
 		return nil, err
 	}
 
-	return mp, nil
+	return obj, nil
+}
+
+func (j *Json) Array() ([]interface{}, error) {
+	if j.RootNodeType != NDArray {
+		panic(JsonError{})
+	}
+
+	arr, err := j.ArrayMapping(j.node)
+	if err != nil {
+		return nil, err
+	}
+
+	return arr, nil
 }
 
 func (j *Json) ObjectMapping(obj *Node) (map[string]interface{}, error) {
